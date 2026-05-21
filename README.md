@@ -1,70 +1,118 @@
-<img align="left" style="width:128px" src="https://github.com/cococry/ragnar/blob/main/branding/logo.png" width="128px">
+<p align="left">
+  <img src="https://github.com/cococry/ragnar/blob/main/branding/logo.png" width="128px" alt="Ragnar logo">
+</p>
 
-**Ragnar is a feature-rich, straight-to-the-point dynamic window manager for X**
+# Ragnar
 
-The goal of ragnarwm is to create a window manager that can be used as a solid foundation
-for fully fledged desktop environments but also serve as a minimal daily driver. Ragnar 
-contains about 5k lines of code which contain features like an IPC API, configuration file, 
-tiling layouts, EWMH & ICCM implementation and much more key features.
+**Ragnar is a feature-rich, straight-to-the-point dynamic window manager for X11.**
 
-Since Version 2.0, the window manager uses the **XCB API** for communicating with the X server,
-which is far less bloated compared to the Xlib API.
+Ragnar is designed to work as both a foundation for full desktop environments and as a minimal daily-driver window manager. The project stays compact at roughly 5,000 lines of code while still providing core window manager features such as:
 
-<img src="https://github.com/cococry/ragnar/blob/main/branding/screenshot.png" width="500px">
+- IPC support
+- External configuration
+- Tiling layouts
+- EWMH and ICCCM support
+- Reparenting-based window decoration
+- Runtime configuration reloads
+
+Since version 2.0, Ragnar uses the **XCB API** to communicate with the X server. XCB provides a lower-level alternative to Xlib and gives Ragnar more direct control over X11 interactions.
+
+<p align="left">
+  <img src="https://github.com/cococry/ragnar/blob/main/branding/screenshot.png" width="500px" alt="Ragnar screenshot">
+</p>
 
 ---
 
-# Installation
+## Installation
 
-Installing ragnarwm is a process that involes two main steps. 
+Installing Ragnar involves two steps.
 
-- Install build depdencies
+### 1. Install build dependencies
+
+Install the following dependencies:
+
 ```console
-xcb-util, xcb-proto, xcb-util-keysyms, xcb-util-cursor, xcb-util-wm, xorg-server, xorg-xinit, mesa, libconfig
+xcb-util
+xcb-proto
+xcb-util-keysyms
+xcb-util-cursor
+xcb-util-wm
+xorg-server
+xorg-xinit
+mesa
+libconfig
 ```
 
-- Install the window manager
+### 2. Install Ragnar
+
+Run the installation script from the project root:
+
 ```console
-$ ./install.sh
+./install.sh
 ```
 
-# Technical
+---
 
-### General
-Ragnar uses **reparenting** to handle client windows which gives it the ability to easily create decoration
-for client windows. 
-Client windows are stored within a doubly linked list. 
-As for the tiling fuctionality, **ragnar does not use some kind of tree datastructure**, instead, 
-there are **preset layouts** which always resemble the same shape. This choice was made to keep the experience
-smooth without thinking about where to place the spawning window. Layouts are still very customizable by changing the sizes of master and slave windows with a simple keybind. 
+## Technical Overview
+
+### Window Management
+
+Ragnar uses **reparenting** to manage client windows. This allows the window manager to create and control decorations around client windows.
+
+Client windows are stored in a doubly linked list. For tiling, Ragnar does not use a tree-based layout system. Instead, it provides preset layouts with predictable structure. This keeps window placement simple and avoids requiring the user to manually decide where each new window should appear.
+
+Layouts can still be adjusted at runtime by changing the size of master and slave areas through keybindings.
 
 ### IPC
-The source code also contains an **abstracted IPC API** for creating plugins. The API works through
-a **socket with binary data**.
 
-### Config file
-Ragnar uses libconfig to read an external configuration file for the window manager (/home/user/.config/ragnarwm.cfg).
-This configuration is read on startup and can be reloaded while the WM is running (Typically through a keybind).
+Ragnar includes an abstracted **IPC API** for plugin development and external control.
 
-### Code Structure
+The IPC system communicates through a socket using binary data. This allows external programs to interact with the window manager in a structured way.
 
-- **funcs.h**
-This file contains the documented function declarations that the window manager uses. Allthough,
-it does **not** contain the callback functions that are fired via keybindings.
+### Configuration
 
-- **keycallbacks.h**
-This file contains the documented function **definitions** of all callback functions that can be specified
-in the configuration file.
+Ragnar uses `libconfig` to load an external configuration file:
 
-- **ragnar.c**
-This is the main translation unit that contains the definitions of all systematic window manager functions,
-containg the application loop, event handling, calculating tiling layouts and more.
+```console
+~/.config/ragnarwm.cfg
+```
 
-- **structs.h**
-This file contains structures and function declaration that are used throughout the window manager's code.
+The configuration is loaded on startup and can be reloaded while the window manager is running, typically through a keybinding.
 
-- **config.h/config.c**
-Those files handle loading the configuration file with libconfig.
+---
 
-- **ipc/**
-The files socket.h and socket.c handle socket connections from clients via IPC.
+## Code Structure
+
+### `funcs.h`
+
+Contains documented function declarations used throughout the window manager.
+
+This file does not contain callback functions triggered by keybindings.
+
+### `keycallbacks.h`
+
+Contains documented definitions of callback functions that can be assigned to keybindings in the configuration file.
+
+### `ragnar.c`
+
+The main translation unit of the window manager.
+
+It contains the core implementation, including:
+
+- The application loop
+- Event handling
+- Window management logic
+- Layout calculations
+- System-level window manager behavior
+
+### `structs.h`
+
+Contains shared structures and function declarations used across the codebase.
+
+### `config.h` / `config.c`
+
+Handles loading and parsing the Ragnar configuration file through `libconfig`.
+
+### `ipc/socket.h` / `ipc/socket.c`
+
+Implements socket handling for IPC clients.
