@@ -3297,40 +3297,6 @@ client_t* clientfromedgewindow(state_t* s, xcb_window_t win) {
   return NULL;
 }
 
-
-/**
- * @brief Returns a filtered linked list of all clients 
- * that are currently visible on the given monitor
- *
- * @param s The window manager's state
- * @param mon The monitor to get visible clients off
- * @param tiled Whether or not to ignore floating clients
- *
- * @return A filtered linked list with all visible clients on 
- * the given monitor
- */
-client_t* 
-visibleclients(state_t* s, monitor_t* mon, bool tiled) {
-  client_t dummy;
-  client_t* tail = &dummy;
-  dummy.next = NULL;
-
-  client_t* current = s->monfocus->clients;
-
-  while (current != NULL) {
-    bool tiled_check = tiled ? current->floating : !tiled;
-    if (tiled_check && clientonscreen(s, current, mon)) {
-      tail->next = current;
-      tail = current;
-    }
-    current = current->next;
-  }
-
-  tail->next = NULL;
-
-  return dummy.next;
-}
-
 /**
  * @brief Adds a monitor area to the linked list of monitors->
  *
