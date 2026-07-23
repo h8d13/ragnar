@@ -32,20 +32,21 @@ source=("${_pkgname}::git+${url}.git")
 sha256sums=('SKIP')
 
 pkgver() {
-    cd $_pkgname
-    echo $pkgver
+  cd $_pkgname || exit 1
+  echo $pkgver
 }
 
 build() {
-    cd $_pkgname
-    # mirrors what happens with install.sh
-    cd api && make || exit 1
-    cd .. || exit 1 && make
+  cd $_pkgname || exit 1
+  # mirrors what happens with install.sh
+  cd api && make || exit 1
+  cd .. || exit 1 && make
 }
 
 package() {
-    cd $_pkgname
-    install -Dm755 bin/ragnar "$pkgdir/usr/bin/ragnar"
-    install -Dm644 ragnar.desktop "$pkgdir/usr/share/xsessions/ragnar.desktop"
-    install -Dm644 cfg/ragnar.cfg "$pkgdir/etc/ragnarwm/ragnar.cfg"
+  cd $_pkgname || exit 1
+  install -Dm755 bin/ragnar "$pkgdir/usr/bin/ragnar"
+  install -Dm644 ragnar.desktop "$pkgdir/usr/share/xsessions/ragnar.desktop"
+  install -Dm644 cfg/ragnar.cfg "$pkgdir/etc/ragnarwm/ragnar.cfg"
+  # we only install sytemwide default cfg, user cfg has to be done manually
 }
