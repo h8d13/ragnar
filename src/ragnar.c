@@ -2525,6 +2525,10 @@ evmaprequest(state_t* s, xcb_generic_event_t* ev) {
     s->mapping_scratchpad_index = -1;
   }
 
+  // Newly spawned windows take focus (and the active border) right
+  // away instead of waiting for the pointer to wander into them
+  focusclient(s, cl, true);
+
   xcb_flush(s->con);
 }
 void 
