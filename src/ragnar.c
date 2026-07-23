@@ -1504,6 +1504,17 @@ switchclientdesktop(state_t* s, client_t* cl, int32_t desktop) {
   }
   hideclient(s, cl);
   makelayout(s, s->monfocus);
+
+  // Sent-away client took focus with it; hand it to the first client
+  // (master slot) still on the visible desktop
+  if(!s->focus) {
+    for(client_t* it = s->monfocus->clients; it != NULL; it = it->next) {
+      if(it->desktop == mondesktop(s, s->monfocus)->idx) {
+        focusclient(s, it, false);
+        break;
+      }
+    }
+  }
 }
 
 /**
