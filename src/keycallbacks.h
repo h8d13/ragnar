@@ -793,6 +793,14 @@ inline void cyclefocusmonitordown(state_t* s, passthrough_data_t data) {
 
   if(!prevmon) return;
 
+  // single monitor: wrap-around lands on the same monitor; move the
+  // client one slot towards the master instead (symmetric to the
+  // in-layout move, unlike the head-insert the monitor switch does)
+  if(prevmon == s->focus->mon) {
+    cycleuplayout(s, data);
+    return;
+  }
+
   area_t afocusmon = s->focus->mon->area;
 
   bool fs = s->focus->fullscreen;
@@ -872,9 +880,17 @@ inline void cyclefocusmonitorup(state_t* s, passthrough_data_t data) {
 
   monitor_t* nextmon = s->focus->mon->next;
   if(!nextmon) {
-    nextmon = s->monitors; 
+    nextmon = s->monitors;
   }
   if(!nextmon) return;
+
+  // single monitor: wrap-around lands on the same monitor; move the
+  // client one slot away from the master instead (symmetric to the
+  // in-layout move, unlike the head-insert the monitor switch does)
+  if(nextmon == s->focus->mon) {
+    cycledownlayout(s, data);
+    return;
+  }
 
   area_t afocusmon = s->focus->mon->area;
 
