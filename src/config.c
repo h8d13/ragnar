@@ -314,7 +314,7 @@ replaceplaceholder(const char* str, const char* placeholder, const char* value) 
 
   // Replace each occurrence of placeholder with the value
   while (count--) {
-    ins = strstr(str, placeholder);
+    ins = (char*)strstr(str, placeholder);
     len_front = ins - str;
     tmp = strncpy(tmp, str, len_front) + len_front;
     tmp = strcpy(tmp, value) + strlen(value);
@@ -335,16 +335,21 @@ kbmodsfromstr(state_t* s, const char* modifiers) {
     return bitmask;
   }
 
-  modifiers = replaceplaceholder(modifiers, "%mod_key", modstr);
+  char* expanded = replaceplaceholder(modifiers, "%mod_key", modstr);
+  if (!expanded)
+    return bitmask;
 
-  while (*modifiers) {
-    while (isspace(*modifiers)) modifiers++;
+  const char* p = expanded;
+  while (*p) {
+    while (isspace(*p)) p++;
 
     char *end = buffer;
-    while (*modifiers && !strchr(delim, *modifiers)) {
-      *end++ = *modifiers++;
+    while (*p && !strchr(delim, *p)) {
+      if (end < buffer + sizeof(buffer) - 1)
+        *end++ = *p;
+      p++;
     }
-    *end = '\0'; 
+    *end = '\0';
 
     if (strcmp(buffer, "Shift") == 0) {
       bitmask |= Shift;
@@ -356,9 +361,10 @@ kbmodsfromstr(state_t* s, const char* modifiers) {
       bitmask |= Super;
     }
 
-    while (isspace(*modifiers) || *modifiers == '|') modifiers++;
+    while (isspace(*p) || *p == '|') p++;
   }
 
+  free(expanded);
   return bitmask;
 }
 
