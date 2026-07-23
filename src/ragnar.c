@@ -383,6 +383,12 @@ void managewins(state_t* s) {
     if (transient_for)
       continue;
 
+    // docks stay unmanaged; struts are gathered after the scan
+    if (iswindowdock(s, wins[i])) {
+      free(attr_reply);
+      continue;
+    }
+
     if (wait_for_mapped(s, wins[i]) || getstate(s, wins[i]) == 3) {
       client_t* cl = makeclient(s, wins[i]);
       xcb_flush(s->con);
@@ -2068,6 +2074,7 @@ setupatoms(state_t* s) {
   s->ewmh_atoms[EWMHwindowType]        = getatom(s, "_NET_WM_WINDOW_TYPE");
   s->ewmh_atoms[EWMHwindowTypeDialog]  = getatom(s, "_NET_WM_WINDOW_TYPE_DIALOG");
   s->ewmh_atoms[EWMHwindowTypePopup]  = getatom(s, "_NET_WM_WINDOW_TYPE_POPUP_MENU");
+  s->ewmh_atoms[EWMHwindowTypeDock]    = getatom(s, "_NET_WM_WINDOW_TYPE_DOCK");
   s->ewmh_atoms[EWMHclientList]        = getatom(s, "_NET_CLIENT_LIST");
   s->ewmh_atoms[EWMHcurrentDesktop]    = getatom(s, "_NET_CURRENT_DESKTOP");
   s->ewmh_atoms[EWMHnumberOfDesktops]  = getatom(s, "_NET_NUMBER_OF_DESKTOPS");
@@ -2176,12 +2183,11 @@ loaddefaultcursor(state_t* s) {
   logmsg(s,  LogLevelTrace, "loaded cursor image '%s'.", s->config.cursorimage);
 }
 
-bool             
-iswindowpopup(state_t* s, xcb_window_t win) {
-  xcb_atom_t typeatom = s->ewmh_atoms[EWMHwindowType]; 
-  xcb_atom_t popupatom = s->ewmh_atoms[EWMHwindowTypePopup]; 
+bool
+haswindowtype(state_t* s, xcb_window_t win, xcb_atom_t type) {
+  xcb_atom_t typeatom = s->ewmh_atoms[EWMHwindowType];
 
-  if (typeatom == XCB_ATOM_NONE || popupatom == XCB_ATOM_NONE)
+  if (typeatom == XCB_ATOM_NONE || type == XCB_ATOM_NONE)
     return false;
 
   xcb_get_property_cookie_t prop_cookie = xcb_get_property(
@@ -2190,20 +2196,30 @@ iswindowpopup(state_t* s, xcb_window_t win) {
   if (!prop_reply)
     return false;
 
-  bool ispopup = false;
+  bool hastype = false;
   if (xcb_get_property_value_length(prop_reply) > 0) {
     xcb_atom_t* atoms = (xcb_atom_t*) xcb_get_property_value(prop_reply);
     int len = xcb_get_property_value_length(prop_reply) / sizeof(xcb_atom_t);
     for (int i = 0; i < len; ++i) {
-      if (atoms[i] == popupatom) {
-        ispopup = true;
+      if (atoms[i] == type) {
+        hastype = true;
         break;
       }
     }
   }
 
   free(prop_reply);
-  return ispopup;
+  return hastype;
+}
+
+bool
+iswindowpopup(state_t* s, xcb_window_t win) {
+  return haswindowtype(s, win, s->ewmh_atoms[EWMHwindowTypePopup]);
+}
+
+bool
+iswindowdock(state_t* s, xcb_window_t win) {
+  return haswindowtype(s, win, s->ewmh_atoms[EWMHwindowTypeDock]);
 }
 
 /**
@@ -2418,15 +2434,25 @@ evmaprequest(state_t* s, xcb_generic_event_t* ev) {
     return;
   }
 
-  if (wa_reply->override_redirect) {
+  bool override_redirect = wa_reply->override_redirect;
+  free(wa_reply);
+  if (override_redirect) {
     return;
   }
 
-  // Free the reply after checking
-  free(wa_reply);
-
   // Don't handle already managed clients
   if (clientfromwin(s, map_ev->window) != NULL) {
+    return;
+  }
+
+  // Docks (status bars etc.) stay unmanaged: map them as-is and
+  // reserve the space their struts request
+  if (iswindowdock(s, map_ev->window)) {
+    xcb_map_window(s->con, map_ev->window);
+    s->nwinstruts = 0;
+    getwinstruts(s, s->root);
+    makelayout(s, s->monfocus);
+    xcb_flush(s->con);
     return;
   }
 
@@ -2554,6 +2580,13 @@ void
 evunmapnotify(state_t* s, xcb_generic_event_t* ev) {
   // Retrieve the event
   xcb_unmap_notify_event_t* unmap_ev = (xcb_unmap_notify_event_t*)ev;
+  // A dock going away frees the space its struts reserved
+  if(iswindowdock(s, unmap_ev->window)) {
+    s->nwinstruts = 0;
+    getwinstruts(s, s->root);
+    makelayout(s, s->monfocus);
+    return;
+  }
   if(iswindowpopup(s, unmap_ev->window)) {
     logmsg(s, LogLevelTrace, "remoed popup window. ", unmap_ev->window); 
     int32_t idx = -1;

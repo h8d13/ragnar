@@ -504,7 +504,9 @@ void             grabkeybinds(state_t* s);
  * */
 void             loaddefaultcursor(state_t* s);
 
-bool             iswindowpopup(state_t* s, xcb_window_t win); 
+bool             haswindowtype(state_t* s, xcb_window_t win, xcb_atom_t type);
+bool             iswindowpopup(state_t* s, xcb_window_t win);
+bool             iswindowdock(state_t* s, xcb_window_t win);
 
 /**
  * @brief Takes in a size for a client window and adjusts it 
