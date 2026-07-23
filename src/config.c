@@ -598,14 +598,18 @@ initconfig(state_t* s) {
     logmsg(s, LogLevelError, "cannot read config file because HOME is not defined.");
   }
 
-  char *cfg_path;
+  char *cfg_path = NULL;
   char const cfg_path_global[] = "/etc/ragnarwm/ragnar.cfg";
 
-  asprintf(&cfg_path, "%s/.config/ragnarwm/ragnar.cfg", home);
+  // on failure asprintf leaves cfg_path undefined, reset to NULL
+  if (home && asprintf(&cfg_path, "%s/.config/ragnarwm/ragnar.cfg", home) < 0) {
+    cfg_path = NULL;
+  }
 
-  printf("ragnar: attempting to read config at %s or %s\n", cfg_path, cfg_path_global);
+  printf("ragnar: attempting to read config at %s or %s\n",
+         cfg_path ? cfg_path : "(no HOME)", cfg_path_global);
   if (
-    !config_read_file(&cfghndl, cfg_path)
+    !(cfg_path && config_read_file(&cfghndl, cfg_path))
     && !config_read_file(&cfghndl, cfg_path_global)
   ) {
     logmsg(s, LogLevelError, "%s:%d - %s\n", config_error_file(&cfghndl),
@@ -616,7 +620,7 @@ initconfig(state_t* s) {
     destroyconfig();
     terminate(s, EXIT_FAILURE);
   }
-
+  free(cfg_path);
 }
 
 void 
