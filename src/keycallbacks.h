@@ -261,7 +261,7 @@ inline void runcmd(state_t* s, passthrough_data_t data) {
 inline void addfocustolayout(state_t* s, passthrough_data_t data) { 
   (void)data;
 
-  if(s->focus->is_scratchpad) return;
+  if(!s->focus || s->focus->is_scratchpad) return;
 
   s->focus->floating = false;
 

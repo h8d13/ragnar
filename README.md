@@ -85,6 +85,8 @@ You can add to `.xinitrc`:
 
 > By default it uses `alacritty` (Super+Return) and `bmenu` (Super+S), if you haven't edited these yet.
 
+You can also for example add: `polybar &` before the `exec ragnar` line.
+
 ---
 
 ## Code Structure

@@ -338,16 +338,6 @@ void             setwintype(state_t* s, client_t* cl);
  */
 void             seturgent(state_t* s, client_t* cl, bool urgent);
 
-
-/**
- * @brief Returns the next on-screen client after the 
- * given client.
- *
- * @param s The window manager's state
- * @param skip_floating Whether or not to skip floating clients
- */
-client_t*	      nextvisible(state_t* s, bool skip_floating);
-
 /**
  * @brief Gets the value of a given property on a 
  * window of a given client.

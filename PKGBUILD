@@ -25,6 +25,7 @@ makedepends=('git' 'make' 'gcc')
 optdepends=(
   'xorg-server-xephyr: nested test session via ragnarstart'
   'alacritty: default terminal keybind'
+  'polybar: optional status/desktops bars'
 )
 provides=('ragnarwm')
 options=('!debug')

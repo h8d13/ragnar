@@ -248,7 +248,7 @@ loop(state_t* s) {
     // Poll for events without blocking
     while ((ev = xcb_wait_for_event(s->con))) {
       uint8_t evcode = ev->response_type & ~0x80;
-      /* If the event we receive is listened for by our 
+      /* If the event we receive is listened for by our
        * event listeners, call the callback for the event. */
       if (evcode < ARRLEN(evhandlers) && evhandlers[evcode]) {
         evhandlers[evcode](s, ev);
@@ -1349,40 +1349,7 @@ seturgent(state_t* s, client_t* cl, bool urgent) {
 }
 
 /**
- * @brief Returns the next on-screen client after the 
- * focused client.
- *
- * @param s The window manager's state
- * @param skip_floating Whether or not to skip floating clients
- */
-client_t* 
-nextvisible(state_t* s, bool skip_floating) {
-  client_t* next = NULL;
-  // Find the next client on the current monitor & desktop 
-  for(client_t* cl = s->focus->next; cl != NULL; cl = cl->next) {
-    bool checktiled = (skip_floating) ? !cl->floating : true;
-    if(checktiled && clientonscreen(s, cl, s->monfocus)) {
-      next = cl;
-      break;
-    }
-  }
-
-  // If there is no next client, cycle back to the first client on the 
-  // current monitor & desktop
-  if(!next) {
-    for(client_t* cl = s->monfocus->clients; cl != NULL; cl = cl->next) {
-    bool checktiled = (skip_floating) ? !cl->floating : true;
-      if(checktiled) {
-        next = cl;
-        break;
-      }
-    }
-  }
-  return next;
- }
-
-/**
- * @brief Gets the value of a given property on a 
+ * @brief Gets the value of a given property on a
  * window of a given client.
  *
  * @param s The window manager's state
