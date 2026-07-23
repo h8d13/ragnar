@@ -79,6 +79,8 @@ Ragnar uses `libconfig` to load an external configuration file:
 
 The configuration is loaded on startup and can be reloaded while the window manager is running, typically through a keybinding.
 
+> By default it uses `alacritty` (Super+Return) and `bmenu` (Super+S), if you haven't edited these yet.
+
 ---
 
 ## Code Structure
