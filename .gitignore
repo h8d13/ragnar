@@ -4,3 +4,4 @@ ragnarstart
 *.patch
 .cache/
 bin/
+pkg/
