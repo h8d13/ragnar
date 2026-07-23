@@ -3308,12 +3308,26 @@ releaseclient(state_t* s, xcb_window_t win) {
    * associated with the window */
     while(cl) {
       if(cl->win == win) {
-        /* Setting the pointer to previous client to the next client 
+        /* Setting the pointer to previous client to the next client
        * after the client we want to release, effectivly removing it
-       * from our list of clients*/ 
+       * from our list of clients*/
         *prev = cl->next;
+        bool wasfocus = (cl == s->focus);
+        if(wasfocus) {
+          s->focus = NULL;
+        }
         // Freeing memory allocated for client
         free(cl);
+        // Released client held focus; hand it to the first client
+        // (master slot) still on the visible desktop
+        if(wasfocus && s->monfocus) {
+          for(client_t* it = s->monfocus->clients; it != NULL; it = it->next) {
+            if(it->desktop == mondesktop(s, s->monfocus)->idx) {
+              focusclient(s, it, false);
+              break;
+            }
+          }
+        }
         return;
       }
       // Advancing the client
