@@ -4,7 +4,7 @@
 pkgname=ragnarwm
 _pkgname="ragnar"
 pkgver='1.3'
-pkgrel=3
+pkgrel=4
 pkgdesc="Minimal, flexible & user-friendly X tiling window manager"
 arch=('x86_64')
 url="https://github.com/h8d13/ragnar"
