@@ -1,4 +1,5 @@
-ragnar.o
+*.o
+*.a
 ragnarstart
 *.patch
 .cache/
