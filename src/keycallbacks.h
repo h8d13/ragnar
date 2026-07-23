@@ -3,7 +3,6 @@
 #include "funcs.h"
 #include "structs.h"
 
-#include <math.h>
 #include <string.h>
 #include <sys/wait.h>
 #include <time.h>
@@ -761,66 +760,6 @@ inline void movefocusright(state_t* s, passthrough_data_t data) {
       - s->focus->area.size.x), pos.y};
   moveclient(s, s->focus, dest, true);
   s->ignore_enter_layout = true;
-}
-
-/**
- * @brief Focuses the client geometrically nearest to the focused
- * one in the given direction on the current desktop. Candidates
- * behind the focused client's center are skipped; among the rest,
- * off-axis distance is penalized so straight neighbors win.
- *
- * @param s The window manager's state
- * @param dir Unit direction to search in
- */
-inline void focusdir(state_t* s, v2_t dir) {
-  if(!s->focus || !s->monfocus) return;
-
-  v2_t fc = (v2_t){
-    s->focus->area.pos.x + s->focus->area.size.x / 2,
-    s->focus->area.pos.y + s->focus->area.size.y / 2};
-
-  client_t* best = NULL;
-  float bestscore = 0;
-  for(client_t* cl = s->monfocus->clients; cl != NULL; cl = cl->next) {
-    if(cl == s->focus) continue;
-    if(cl->desktop != mondesktop(s, cl->mon)->idx) continue;
-
-    v2_t cc = (v2_t){
-      cl->area.pos.x + cl->area.size.x / 2,
-      cl->area.pos.y + cl->area.size.y / 2};
-    float along = (cc.x - fc.x) * dir.x + (cc.y - fc.y) * dir.y;
-    if(along <= 0) continue;
-    float ortho = fabsf((cc.x - fc.x) * dir.y) + fabsf((cc.y - fc.y) * dir.x);
-    float score = along + 2 * ortho;
-    if(!best || score < bestscore) {
-      best = cl;
-      bestscore = score;
-    }
-  }
-  if(!best) return;
-  focusclient(s, best, false);
-  raiseclient(s, best);
-  s->ignore_enter_layout = true;
-}
-
-inline void focusup(state_t* s, passthrough_data_t data) {
-  (void)data;
-  focusdir(s, (v2_t){0, -1});
-}
-
-inline void focusdown(state_t* s, passthrough_data_t data) {
-  (void)data;
-  focusdir(s, (v2_t){0, 1});
-}
-
-inline void focusleft(state_t* s, passthrough_data_t data) {
-  (void)data;
-  focusdir(s, (v2_t){-1, 0});
-}
-
-inline void focusright(state_t* s, passthrough_data_t data) {
-  (void)data;
-  focusdir(s, (v2_t){1, 0});
 }
 
 
