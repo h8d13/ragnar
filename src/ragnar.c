@@ -3585,6 +3585,18 @@ updatemons(state_t* s) {
   }
   free(res_reply);
 
+  // No RandR outputs with a CRTC (nested Xephyr, some VMs): treat the
+  // whole screen as one monitor instead of crashing on mon == NULL
+  if(registered_count == 0) {
+    area_t screenarea = (area_t){
+      .pos  = (v2_t){0, 0},
+      .size = (v2_t){s->screen->width_in_pixels, s->screen->height_in_pixels}
+    };
+    addmon(s, screenarea, registered_count++);
+    logmsg(s, LogLevelError,
+           "no RandR monitors found, falling back to the X screen as one monitor.");
+  }
+
   return registered_count;
 }
 

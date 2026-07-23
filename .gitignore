@@ -7,3 +7,4 @@ bin/
 pkg/
 ragnar/
 **.tar.zst
+.gdb.log
