@@ -149,7 +149,6 @@ typedef enum {
   EWMHcurrentDesktop,
   EWMHnumberOfDesktops,
   EWMHdesktopNames,
-  EWMHdesktop,
   EWMHcount
 } ewmh_atom_t;
 

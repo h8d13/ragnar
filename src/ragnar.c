@@ -556,7 +556,7 @@ makeclient(state_t* s, xcb_window_t win) {
 
   // Set client's monitor
   cl->mon = clmon;
-  setclientdesktop(s, cl, mondesktop(s, s->monfocus)->idx);
+  cl->desktop = mondesktop(s, s->monfocus)->idx;
   logmsg(s, LogLevelTrace,"Added client on desktop %i", cl->desktop);
 
   // Update the EWMH client list
@@ -821,7 +821,7 @@ moveclient(state_t* s, client_t* cl, v2_t pos, bool manage_mons) {
       updateewmhdesktops(s, cl->mon);
     }
     s->monfocus = cl->mon;
-    setclientdesktop(s, cl, mondesktop(s, cl->mon)->idx);
+    cl->desktop = mondesktop(s, cl->mon)->idx;
   }
   updateedgewindows(s, cl);
 }
@@ -1498,12 +1498,16 @@ switchclientdesktop(state_t* s, client_t* cl, int32_t desktop) {
   }
   free(names);
 
-  setclientdesktop(s, cl, desktop);
+  cl->desktop = desktop;
   if(cl == s->focus) {
     unfocusclient(s, cl);
   }
   hideclient(s, cl);
   makelayout(s, s->monfocus);
+
+  // Sending a client somewhere makes that desktop active; only view
+  // switches set this otherwise, leaving the EWMH count stale
+  s->monfocus->activedesktops[desktop].init = true;
 
   // Publish desktop count/names right away (the target desktop may
   // have just been created); bars otherwise lag until a view switch
@@ -2025,14 +2029,6 @@ uploaddesktopnames(state_t* s, monitor_t* mon) {
 }
 
 void 
-setclientdesktop(state_t* s, client_t* cl, uint32_t desktop) {
-  cl->desktop = desktop;
-  // publish per-window desktop so bars can show occupancy
-  xcb_change_property(s->con, XCB_PROP_MODE_REPLACE, cl->win,
-      s->ewmh_atoms[EWMHdesktop], XCB_ATOM_CARDINAL, 32, 1, &desktop);
-}
-
-void
 updateewmhdesktops(state_t* s, monitor_t* mon) {
   s->monfocus = mon;
   uint32_t desktopcount = 0;
@@ -2100,7 +2096,6 @@ setupatoms(state_t* s) {
   s->ewmh_atoms[EWMHcurrentDesktop]    = getatom(s, "_NET_CURRENT_DESKTOP");
   s->ewmh_atoms[EWMHnumberOfDesktops]  = getatom(s, "_NET_NUMBER_OF_DESKTOPS");
   s->ewmh_atoms[EWMHdesktopNames]      = getatom(s, "_NET_DESKTOP_NAMES");
-  s->ewmh_atoms[EWMHdesktop]           = getatom(s, "_NET_WM_DESKTOP");
 
   xcb_atom_t utf8str = getatom(s, "UTF8_STRING");
 

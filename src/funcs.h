@@ -472,7 +472,6 @@ void             uploaddesktopnames(state_t* s, monitor_t* mon);
  * and sends them to EWMH 
  * @param s The window manager's state
  */
-void             setclientdesktop(state_t* s, client_t* cl, uint32_t desktop);
 void             updateewmhdesktops(state_t* s, monitor_t* mon);
 
 /**
