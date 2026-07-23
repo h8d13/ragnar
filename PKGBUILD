@@ -28,7 +28,7 @@ optdepends=(
 )
 provides=('ragnarwm')
 options=('!debug')
-source=("${_pkgname}::git+https://github.com/h8d13/ragnar.git")
+source=("${_pkgname}::git+${url}.git")
 sha256sums=('SKIP')
 
 pkgver() {
