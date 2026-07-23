@@ -842,7 +842,7 @@ inline void cyclefocusmonitordown(state_t* s, passthrough_data_t data) {
     s->focus->mon = prevmon;
     updateewmhdesktops(s, s->focus->mon);
     s->monfocus = s->focus->mon;
-    s->focus->desktop = mondesktop(s, s->focus->mon)->idx;
+    setclientdesktop(s, s->focus, mondesktop(s, s->focus->mon)->idx);
   }
 
   // Resizing
@@ -933,7 +933,7 @@ inline void cyclefocusmonitorup(state_t* s, passthrough_data_t data) {
     s->focus->mon = nextmon;
     updateewmhdesktops(s, s->focus->mon);
     s->monfocus = s->focus->mon;
-    s->focus->desktop = mondesktop(s, s->focus->mon)->idx;
+    setclientdesktop(s, s->focus, mondesktop(s, s->focus->mon)->idx);
   }
   // Resizing
   {
