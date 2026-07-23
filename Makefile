@@ -1,13 +1,13 @@
 CC = cc
-CFLAGS = -O3 -ffast-math -Wall -Wextra -pedantic
-CFLAGS += -isystem api/include
+CFLAGS ?= -O3 -ffast-math
+ALL_CFLAGS = $(CFLAGS) -Wall -Wextra -pedantic -isystem api/include
 
 LDLIBS = -lxcb -lxcb-keysyms -lxcb-icccm -lxcb-cursor -lxcb-randr -lxcb-composite -lxcb-ewmh -lX11 -lX11-xcb -lGL -lm -lconfig -lxcb-util
 
 SRC = ./src/*.c ./src/ipc/*.c
 BIN = ragnar
 
-RAGNAR_API = api/lib/ragnar.a
+RAGNAR_API = api/lib/libragnar.a
 
 PREFIX = /usr
 BINDIR = $(PREFIX)/bin
@@ -15,8 +15,10 @@ BINDIR = $(PREFIX)/bin
 .PHONY: all
 all: $(RAGNAR_API)
 	mkdir -p ./bin
-	$(CC) -o bin/$(BIN) $(CFLAGS) $(SRC) $(LDLIBS)
+	$(CC) -o bin/$(BIN) $(ALL_CFLAGS) $(SRC) $(LDLIBS)
 
+# always recurse; sub-make decides if anything is stale
+.PHONY: $(RAGNAR_API)
 $(RAGNAR_API):
 	$(MAKE) -C api
 

@@ -5,3 +5,5 @@ ragnarstart
 .cache/
 bin/
 pkg/
+ragnar/
+**.tar.zst
