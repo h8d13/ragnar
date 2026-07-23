@@ -504,6 +504,7 @@ void             grabkeybinds(state_t* s);
  * */
 void             loaddefaultcursor(state_t* s);
 
+void             setcursorhidden(state_t* s, bool hidden);
 bool             haswindowtype(state_t* s, xcb_window_t win, xcb_atom_t type);
 bool             iswindowpopup(state_t* s, xcb_window_t win);
 bool             iswindowdock(state_t* s, xcb_window_t win);

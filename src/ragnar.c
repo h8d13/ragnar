@@ -23,6 +23,7 @@
 #include <xcb/xcb_cursor.h>
 #include <xcb/randr.h>
 #include <xcb/composite.h>
+#include <xcb/xfixes.h>
 
 #include <X11/cursorfont.h>
 #include <X11/keysym.h>
@@ -2178,6 +2179,34 @@ loaddefaultcursor(state_t* s) {
   xcb_cursor_context_free(context);
 
   logmsg(s,  LogLevelTrace, "loaded cursor image '%s'.", s->config.cursorimage);
+
+  // XFixes lets us hide the cursor until the pointer actually moves;
+  // the version handshake is required before any other xfixes request
+  xcb_xfixes_query_version_reply_t* xfixes_reply = xcb_xfixes_query_version_reply(
+      s->con, xcb_xfixes_query_version(s->con, XCB_XFIXES_MAJOR_VERSION,
+                                       XCB_XFIXES_MINOR_VERSION), NULL);
+  s->xfixes_ok = xfixes_reply != NULL;
+  free(xfixes_reply);
+  if(!s->xfixes_ok) {
+    logmsg(s, LogLevelError, "XFixes unavailable, cursor auto-hide disabled.");
+  }
+  setcursorhidden(s, true);
+}
+
+/**
+ * @brief Hides or shows the cursor (no-op without XFixes). The cursor
+ * is hidden on keybind use and shown again on real pointer motion.
+ * */
+void
+setcursorhidden(state_t* s, bool hidden) {
+  if(!s->xfixes_ok || s->cursorhidden == hidden) return;
+  if(hidden) {
+    xcb_xfixes_hide_cursor(s->con, s->root);
+  } else {
+    xcb_xfixes_show_cursor(s->con, s->root);
+  }
+  s->cursorhidden = hidden;
+  xcb_flush(s->con);
 }
 
 bool
@@ -2714,6 +2743,7 @@ evkeypress(state_t* s, xcb_generic_event_t* ev) {
     // If it was pressed, call the callback of the keybind
     if ((keysym == s->config.keybinds[i].key) && (e->state == s->config.keybinds[i].modmask)) {
       if(s->config.keybinds[i].cb) {
+        setcursorhidden(s, true);
         s->config.keybinds[i].cb(s, s->config.keybinds[i].data);
       }
     }
@@ -2832,6 +2862,7 @@ evmotionnotify(state_t* s, xcb_generic_event_t* ev) {
   }
   s->lastmotiontime = curtime;
   s->ignore_enter_layout = false;
+  setcursorhidden(s, false);
 
   if (motion_ev->event == s->root) {
     monitor_t* mon = cursormon(s);

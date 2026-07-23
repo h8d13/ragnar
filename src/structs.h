@@ -521,6 +521,9 @@ struct state_t {
 
   bool ignore_enter_layout;
 
+  bool xfixes_ok;
+  bool cursorhidden;
+
   client_t* focus;
   popup_list_t popups;
 

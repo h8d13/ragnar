@@ -2,7 +2,7 @@ CC = cc
 CFLAGS ?= -O3 -ffast-math
 ALL_CFLAGS = $(CFLAGS) -Wall -Wextra -pedantic -isystem api/include
 
-LDLIBS = -lxcb -lxcb-keysyms -lxcb-icccm -lxcb-cursor -lxcb-randr -lxcb-composite -lxcb-ewmh -lX11 -lX11-xcb -lGL -lm -lconfig -lxcb-util
+LDLIBS = -lxcb -lxcb-keysyms -lxcb-icccm -lxcb-cursor -lxcb-randr -lxcb-composite -lxcb-ewmh -lxcb-xfixes -lX11 -lX11-xcb -lGL -lm -lconfig -lxcb-util
 
 SRC = ./src/*.c ./src/ipc/*.c
 BIN = ragnar
