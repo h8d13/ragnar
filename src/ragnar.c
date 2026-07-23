@@ -2526,7 +2526,10 @@ evmaprequest(state_t* s, xcb_generic_event_t* ev) {
   }
 
   // Newly spawned windows take focus (and the active border) right
-  // away instead of waiting for the pointer to wander into them
+  // away instead of waiting for the pointer to wander into them.
+  // The relayout shifts windows under the stationary pointer; swallow
+  // the resulting enter events so they can't steal the focus back.
+  s->ignore_enter_layout = true;
   focusclient(s, cl, true);
 
   xcb_flush(s->con);
