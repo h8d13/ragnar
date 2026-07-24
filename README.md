@@ -32,14 +32,14 @@ Installing Ragnar involves two steps.
 Install the following dependencies:
 
 ```console
-xcb-util
-xcb-proto
-xcb-util-keysyms
-xcb-util-cursor
-xcb-util-wm
-xorg-server
-xorg-xinit
-mesa
+xcb-util \
+xcb-proto \
+xcb-util-keysyms \
+xcb-util-cursor \
+xcb-util-wm \
+xorg-server \
+xorg-xinit \
+mesa \
 libconfig
 ```
 
