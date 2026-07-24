@@ -1999,12 +1999,13 @@ uploaddesktopnames(state_t* s, monitor_t* mon) {
   xcb_screen_t *screen = xcb_setup_roots_iterator(xcb_get_setup(s->con)).data;
   xcb_window_t root_window = screen->root;
 
-  // Set the _NET_DESKTOP_NAMES property
+  // Set the _NET_DESKTOP_NAMES property; EWMH mandates UTF8_STRING,
+  // pagers reject a STRING-typed value and fall back to numbering
   xcb_change_property(s->con,
                       XCB_PROP_MODE_REPLACE,
                       root_window,
                       s->ewmh_atoms[EWMHdesktopNames],
-                      XCB_ATOM_STRING,
+                      getatom(s, "UTF8_STRING"),
                       8,
                       total_length,
                       data);
