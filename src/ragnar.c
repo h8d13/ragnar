@@ -1577,7 +1577,7 @@ switchmonitordesktop(state_t* s, int32_t desktop) {
 uint32_t
 numinlayout(state_t* s, monitor_t* mon) {
   uint32_t nlayout = 0;
-  for(client_t* cl = s->monfocus->clients; cl != NULL; cl = cl->next) {
+  for(client_t* cl = mon->clients; cl != NULL; cl = cl->next) {
     if(clientonscreen(s, cl, mon) && !cl->floating) {
       nlayout++;
     }
@@ -1607,7 +1607,7 @@ makelayout(state_t* s, monitor_t* mon) {
   if(curlayout == LayoutFloating) return;
 
   /* Make sure that there is always at least one slave window */
-  uint32_t nlayout = numinlayout(s, s->monfocus);
+  uint32_t nlayout = numinlayout(s, mon);
   uint32_t deskidx = mondesktop(s, mon)->idx;
   while(nlayout - mon->layouts[deskidx].nmaster == 0 && nlayout != 1) {
     mon->layouts[deskidx].nmaster--;
@@ -1642,7 +1642,7 @@ makelayout(state_t* s, monitor_t* mon) {
  */
 void 
 resetlayoutsizes(state_t* s, monitor_t* mon) {
-  for(client_t* cl = s->monfocus->clients; cl != NULL; cl = cl->next) {
+  for(client_t* cl = mon->clients; cl != NULL; cl = cl->next) {
     if(cl->floating ||
       !clientonscreen(s, cl, mon)) continue;
 
@@ -1703,9 +1703,9 @@ tiledmaster(state_t* s, monitor_t* mon) {
   mon->layouts[deskidx].mastermaxed = false;
 
   uint32_t i = 0;
-  for(client_t* cl = s->monfocus->clients; cl != NULL; cl = cl->next) {
-    if(cl->floating || 
-      cl->desktop != mondesktop(s, cl->mon)->idx || 
+  for(client_t* cl = mon->clients; cl != NULL; cl = cl->next) {
+    if(cl->floating ||
+      cl->desktop != mondesktop(s, cl->mon)->idx ||
       cl->mon != mon) continue;
     if(i >= nmaster) break;
 
@@ -1719,9 +1719,9 @@ tiledmaster(state_t* s, monitor_t* mon) {
   i = 0;
 
   float lastadd = 0.0f;
-  for(client_t* cl = s->monfocus->clients; cl != NULL; cl = cl->next) {
+  for(client_t* cl = mon->clients; cl != NULL; cl = cl->next) {
     if(cl->floating ||
-      cl->desktop != mondesktop(s, cl->mon)->idx || 
+      cl->desktop != mondesktop(s, cl->mon)->idx ||
       cl->mon != mon) continue;
 
     bool ismaster = (i < nmaster);
@@ -1778,7 +1778,7 @@ verticalstripes(state_t* s, monitor_t* mon) {
   int32_t gapsize     = mon->layouts[deskidx].gapsize;
 
   {
-    for(client_t* cl = s->monfocus->clients; cl != NULL; cl = cl->next) {
+    for(client_t* cl = mon->clients; cl != NULL; cl = cl->next) {
       if(cl->floating || cl->desktop != mondesktop(s, cl->mon)->idx
         || cl->mon != mon) continue;
       nwins++;
@@ -1792,8 +1792,8 @@ verticalstripes(state_t* s, monitor_t* mon) {
 
   // Apply strut information to the layout
   for(uint32_t i = 0; i < s->nwinstruts; i++) {
-    bool onmonitor = 
-      s->winstruts[i].startx >= mon->area.pos.x  
+    bool onmonitor =
+      s->winstruts[i].startx >= mon->area.pos.x
       && s->winstruts[i].endx <= mon->area.pos.x + mon->area.size.x;
 
     if(!onmonitor) continue;
@@ -1813,10 +1813,10 @@ verticalstripes(state_t* s, monitor_t* mon) {
       h -= s->winstruts[i].bottom;
     }
   }
-  
+
 
   float lastadd = 0.0f;
-  for(client_t* cl = s->monfocus->clients; cl != NULL; cl = cl->next) {
+  for(client_t* cl = mon->clients; cl != NULL; cl = cl->next) {
     if(cl->floating || cl->desktop != mondesktop(s, cl->mon)->idx || cl->mon != mon) continue;
 
     float winw = (float)w / nwins + cl->layoutsizeadd - lastadd;
@@ -1849,7 +1849,7 @@ horizontalstripes(state_t* s, monitor_t* mon) {
   int32_t gapsize     = mon->layouts[deskidx].gapsize;
 
   {
-    for(client_t* cl = s->monfocus->clients; cl != NULL; cl = cl->next) {
+    for(client_t* cl = mon->clients; cl != NULL; cl = cl->next) {
       if(cl->floating || cl->desktop != mondesktop(s, cl->mon)->idx
         || cl->mon != mon) continue;
       nwins++;
@@ -1887,7 +1887,7 @@ horizontalstripes(state_t* s, monitor_t* mon) {
 
   float lastadd = 0.0f;
 
-  for(client_t* cl = s->monfocus->clients; cl != NULL; cl = cl->next) {
+  for(client_t* cl = mon->clients; cl != NULL; cl = cl->next) {
     if(cl->floating || cl->desktop != mondesktop(s, cl->mon)->idx || cl->mon != mon) continue;
 
     float winh = (float)h / nwins + cl->layoutsizeadd - lastadd;
@@ -2361,7 +2361,7 @@ enumartelayout(state_t* s, monitor_t* mon, uint32_t* nmaster, uint32_t* nslaves)
   } 
 
   uint32_t i = 0;
-  for(client_t* cl = s->monfocus->clients; cl != NULL; cl = cl->next) {
+  for(client_t* cl = mon->clients; cl != NULL; cl = cl->next) {
     if(cl->floating || cl->desktop != mondesktop(s, cl->mon)->idx
       || cl->mon != mon) continue;
     if(i >= *nmaster) {
@@ -2391,7 +2391,7 @@ isclientmaster(state_t* s, client_t* cl, monitor_t* mon) {
   uint32_t deskidx = mondesktop(s, mon)->idx;
   uint32_t nmaster = mon->layouts[deskidx].nmaster;
 
-  for(client_t* iter = s->monfocus->clients; iter != NULL; iter = iter->next) {
+  for(client_t* iter = mon->clients; iter != NULL; iter = iter->next) {
     if(iter->floating ||
       iter->desktop != mondesktop(s, iter->mon)->idx || 
       iter->mon != mon) continue;
