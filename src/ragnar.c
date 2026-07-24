@@ -1526,9 +1526,9 @@ switchmonitordesktop(state_t* s, int32_t desktop) {
     }
     init_i++;
   }
-  // Notify EWMH for desktop change
-  xcb_change_property(s->con, XCB_PROP_MODE_REPLACE, s->root, s->ewmh_atoms[EWMHcurrentDesktop],
-      XCB_ATOM_CARDINAL, 32, 1, &desktopidx);
+  // Names and count go out before current: pagers resolve the
+  // current index against names, stale ones render the wrong label
+  uploaddesktopnames(s, s->monfocus);
 
   uint32_t desktopcount = 0;
   for(uint32_t i = 0; i < s->monfocus->desktopcount; i++) {
@@ -1538,7 +1538,10 @@ switchmonitordesktop(state_t* s, int32_t desktop) {
   }
   xcb_change_property(s->con, XCB_PROP_MODE_REPLACE, s->root, s->ewmh_atoms[EWMHnumberOfDesktops],
                       XCB_ATOM_CARDINAL, 32, 1, &desktopcount);
-  uploaddesktopnames(s, s->monfocus);
+
+  // Notify EWMH for desktop change
+  xcb_change_property(s->con, XCB_PROP_MODE_REPLACE, s->root, s->ewmh_atoms[EWMHcurrentDesktop],
+      XCB_ATOM_CARDINAL, 32, 1, &desktopidx);
 
 
   for (client_t* cl = s->monfocus->clients; cl != NULL; cl = cl->next) {
@@ -2011,6 +2014,9 @@ uploaddesktopnames(state_t* s, monitor_t* mon) {
 void 
 updateewmhdesktops(state_t* s, monitor_t* mon) {
   s->monfocus = mon;
+  // Names and count go out before current: pagers resolve the
+  // current index against names, stale ones render the wrong label
+  uploaddesktopnames(s, s->monfocus);
   uint32_t desktopcount = 0;
   for(uint32_t i = 0; i < s->monfocus->desktopcount; i++) {
     if(s->monfocus->activedesktops[i].init) {
@@ -2019,7 +2025,6 @@ updateewmhdesktops(state_t* s, monitor_t* mon) {
   }
   xcb_change_property(s->con, XCB_PROP_MODE_REPLACE, s->root, s->ewmh_atoms[EWMHnumberOfDesktops],
                       XCB_ATOM_CARDINAL, 32, 1, &desktopcount);
-  uploaddesktopnames(s, s->monfocus);
   desktop_t* desk = mondesktop(s, s->monfocus);
   if(desk) {
     // _NET_DESKTOP_NAMES only lists published desktops, so the
