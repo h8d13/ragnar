@@ -2022,8 +2022,17 @@ updateewmhdesktops(state_t* s, monitor_t* mon) {
   uploaddesktopnames(s, s->monfocus);
   desktop_t* desk = mondesktop(s, s->monfocus);
   if(desk) {
+    // _NET_DESKTOP_NAMES only lists published desktops, so the
+    // current desktop must be its position in that list; the raw
+    // idx drifts as soon as pruning leaves a gap
+    uint32_t ewmhidx = 0;
+    for(uint32_t i = 0; i < desk->idx && i < s->monfocus->desktopcount; i++) {
+      if(s->monfocus->activedesktops[i].init) {
+        ewmhidx++;
+      }
+    }
     xcb_change_property(s->con, XCB_PROP_MODE_REPLACE, s->root, s->ewmh_atoms[EWMHcurrentDesktop],
-                        XCB_ATOM_CARDINAL, 32, 1, &desk->idx);
+                        XCB_ATOM_CARDINAL, 32, 1, &ewmhidx);
   }
 }
 
