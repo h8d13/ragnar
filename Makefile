@@ -39,7 +39,6 @@ config:
 .PHONY: install
 install: 
 	install -Dm755 bin/$(BIN) -t $(BINDIR)
-	install -Dm755 ragnarstart -t $(BINDIR)
 	cp -f ragnar.desktop $(PREFIX)/share/xsessions/
 
 .PHONY: clean
@@ -50,4 +49,3 @@ clean:
 uninstall:
 	$(RM) $(BINDIR)/ragnar
 	$(RM) $(PREFIX)/share/xsessions/ragnar.desktop
-	$(RM) $(BINDIR)/ragnarstart

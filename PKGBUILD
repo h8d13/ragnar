@@ -3,8 +3,8 @@
 
 pkgname=ragnarwm
 _pkgname="ragnar"
-pkgver='1.3'
-pkgrel=4
+pkgver='2'
+pkgrel=1
 pkgdesc="Minimal, flexible & user-friendly X tiling window manager"
 arch=('x86_64')
 url="https://github.com/h8d13/ragnar"
@@ -23,7 +23,6 @@ depends=(
 )
 makedepends=('git' 'make' 'gcc')
 optdepends=(
-  'xorg-server-xephyr: nested test session via ragnarstart'
   'alacritty: default terminal keybind'
   'polybar: optional status/desktops bars'
 )

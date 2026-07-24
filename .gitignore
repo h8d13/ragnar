@@ -1,6 +1,5 @@
 *.o
 *.a
-ragnarstart
 *.patch
 .cache/
 bin/

@@ -149,9 +149,6 @@ setup(state_t* s) {
     XSetErrorHandler(xerror);
     XSync(s->dsp, False);
   }
-  // Run the startup script
-  runcmd(NULL, (passthrough_data_t){.cmd = "ragnarstart"});
-
   // Setting up xcb connection 
   s->con = XGetXCBConnection(s->dsp);
   // Checking for errors
