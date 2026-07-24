@@ -355,6 +355,9 @@ inline void setfloatingmode(state_t* s, passthrough_data_t data) {
   for(client_t* cl = s->monfocus->clients; cl != NULL; cl = cl->next) {
     if(clientonscreen(s, cl, s->monfocus)) {
       cl->floating = true;
+      // floating layout skips makelayout, so no geometry op will
+      // refresh the edge handles; do it here
+      updateedgewindows(s, cl);
     }
   }
   uint32_t deskidx = mondesktop(s, s->monfocus)->idx;
