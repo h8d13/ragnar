@@ -74,7 +74,7 @@ The IPC system communicates through a socket using binary data. This allows exte
 Ragnar uses `libconfig` to load an external configuration file:
 
 ```console
-~/.config/ragnarwm.cfg
+~/.config/ragnarwm/ragnar.cfg
 ```
 
 The configuration is loaded on startup and can be reloaded while the window manager is running, typically through a keybinding.
@@ -83,7 +83,7 @@ You can add to `.xinitrc`:
 
 `exec path/to/ragnar` Then simply; `startx`
 
-> By default it uses `alacritty` (Super+Return) and `bmenu` (Super+S), if you haven't edited these yet.
+> By default it uses `alacritty` (Super+Return) and `dmenu` (Super+S), if you haven't edited these yet.
 
 You can also for example add: `polybar &` before the `exec ragnar` line.
 
