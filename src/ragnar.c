@@ -3225,6 +3225,25 @@ evpropertynotify(state_t* s, xcb_generic_event_t* ev) {
 void
 evclientmessage(state_t* s, xcb_generic_event_t* ev) {
   xcb_client_message_event_t* msg_ev = (xcb_client_message_event_t*)ev;
+
+  // Pagers request desktop switches with an index into the published
+  // (compressed) desktop list; map it back to the raw desktop index
+  if(msg_ev->type == s->ewmh_atoms[EWMHcurrentDesktop]) {
+    if(!s->monfocus) return;
+    uint32_t target = msg_ev->data.data32[0];
+    uint32_t pos = 0;
+    for(uint32_t i = 0; i < s->monfocus->desktopcount; i++) {
+      if(!s->monfocus->activedesktops[i].init) continue;
+      if(pos == target) {
+        switchmonitordesktop(s, i);
+        xcb_flush(s->con);
+        break;
+      }
+      pos++;
+    }
+    return;
+  }
+
   client_t* cl = clientfromwin(s, msg_ev->window);
 
   if(!cl) {
