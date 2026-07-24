@@ -440,6 +440,13 @@ void managewins(state_t* s) {
 void updateedgewindows(state_t* s, client_t* cl) {
   if (!cl->edges) return;
 
+  // pointer resize handles are floating-window UX; tiled windows
+  // resize through layout keybinds
+  bool show = cl->floating && !cl->fullscreen;
+  if (cl->showedgewindows != show)
+    toggleedgewindows(s, cl, show);
+  if (!show) return;
+
   int w = cl->area.size.x;
   int h = cl->area.size.y;
   int b = EDGE_WIDTH;
