@@ -1497,6 +1497,9 @@ switchclientdesktop(state_t* s, client_t* cl, int32_t desktop) {
       }
     }
   }
+
+  // IPC/EWMH moves can drain a background desktop
+  prunedesktops(s, s->monfocus);
 }
 
 /**
@@ -1572,6 +1575,9 @@ switchmonitordesktop(state_t* s, int32_t desktop) {
       break;
     }
   }
+
+  // Leaving an emptied desktop unpublishes it
+  prunedesktops(s, s->monfocus);
 }
 
 /**
@@ -2022,8 +2028,42 @@ updateewmhdesktops(state_t* s, monitor_t* mon) {
 }
 
 /**
+ * @brief Unpublishes active desktops that hold no client anymore and
+ * notifies EWMH if any were removed. The currently viewed desktop and
+ * the default desktop stay published even when empty.
+ *
+ * @param s The window manager's state
+ * @param mon The monitor whose desktops are pruned
+ */
+void
+prunedesktops(state_t* s, monitor_t* mon) {
+  desktop_t* curdesk = mondesktop(s, mon);
+  bool changed = false;
+  for(uint32_t i = 0; i < mon->desktopcount; i++) {
+    if(!mon->activedesktops[i].init) continue;
+    if(i == s->config.desktopinit) continue;
+    if(curdesk && i == curdesk->idx) continue;
+
+    bool occupied = false;
+    for(client_t* cl = mon->clients; cl != NULL; cl = cl->next) {
+      if(cl->desktop == i) {
+        occupied = true;
+        break;
+      }
+    }
+    if(!occupied) {
+      mon->activedesktops[i].init = false;
+      changed = true;
+    }
+  }
+  if(changed) {
+    updateewmhdesktops(s, mon);
+  }
+}
+
+/**
  * @brief Creates a new virtual desktop and notifies EWMH about it.
- * @param s The window manager's state 
+ * @param s The window manager's state
  * @param idx The index of the virtual desktop
  * @param mon The monitor that the virtual desktop is on
  */
@@ -2632,6 +2672,8 @@ evunmapnotify(state_t* s, xcb_generic_event_t* ev) {
     cl->ignoreunmap = false;
     return;
   }
+  // cl is freed by releaseclient below; monitors outlive it
+  monitor_t* clmon = cl ? cl->mon : NULL;
 
   if(cl) {
     if(cl->is_scratchpad) {
@@ -2651,6 +2693,11 @@ evunmapnotify(state_t* s, xcb_generic_event_t* ev) {
 
   // Re-establish the window layout
   makelayout(s, s->monfocus);
+
+  // Client may have been the last one on a background desktop
+  if(clmon) {
+    prunedesktops(s, clmon);
+  }
 
   xcb_flush(s->con);
 }
@@ -2673,8 +2720,10 @@ evdestroynotify(state_t* s, xcb_generic_event_t* ev) {
   if(cl->is_scratchpad) {
     removescratchpad(s, cl->scratchpad_index);
   }
+  monitor_t* clmon = cl->mon;
   unframeclient(s, cl);
   releaseclient(s, destroy_ev->window);
+  prunedesktops(s, clmon);
 }
 
 /**
@@ -3591,18 +3640,6 @@ updatemons(state_t* s) {
     }
   }
   free(res_reply);
-
-  // No RandR outputs with a CRTC (nested Xephyr, some VMs): treat the
-  // whole screen as one monitor instead of crashing on mon == NULL
-  if(registered_count == 0) {
-    area_t screenarea = (area_t){
-      .pos  = (v2_t){0, 0},
-      .size = (v2_t){s->screen->width_in_pixels, s->screen->height_in_pixels}
-    };
-    addmon(s, screenarea, registered_count++);
-    logmsg(s, LogLevelError,
-           "no RandR monitors found, falling back to the X screen as one monitor.");
-  }
 
   return registered_count;
 }
