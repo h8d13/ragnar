@@ -288,10 +288,10 @@ terminate(state_t* s, int32_t exitcode) {
     }
   }
 
+  // s->con is owned by s->dsp (XGetXCBConnection); XCloseDisplay tears the
+  // xcb connection down with it, a second xcb_disconnect double-frees
   if (s->dsp != NULL)
       XCloseDisplay(s->dsp);
-  // Give up the X connection
-  xcb_disconnect(s->con);
 
   logmsg(s,  LogLevelTrace, "terminated with exit code %i.", exitcode);
 
