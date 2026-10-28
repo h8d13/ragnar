@@ -969,6 +969,10 @@ inline void togglescratchpad(state_t* s, passthrough_data_t data) {
   if(s->scratchpads[data.i].hidden) {
     showclient(s, cl);
     raiseclient(s, cl);
+    // Same as a fresh spawn: the enter events from mapping under the
+    // pointer must not steal the focus back
+    ignoreenterlayout(s);
+    focusclient(s, cl, true);
   } else {
     // A hidden focus would stay the target of focus keybinds (killfocus)
     if(s->focus == cl) unfocusclient(s, cl);

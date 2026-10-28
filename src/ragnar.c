@@ -1596,7 +1596,14 @@ switchmonitordesktop(state_t* s, int32_t desktop) {
 
 
   for (client_t* cl = s->monfocus->clients; cl != NULL; cl = cl->next) {
-    if(cl->scratchpad_index != -1) continue;
+    // Scratchpads belong to no desktop: hide, the toggle brings them back
+    if(cl->scratchpad_index != -1) {
+      if(!s->scratchpads[cl->scratchpad_index].hidden) {
+        hideclient(s, cl);
+        s->scratchpads[cl->scratchpad_index].hidden = true;
+      }
+      continue;
+    }
     // Hide the clients on the current desktop
     if(cl->desktop == mondesktop(s, s->monfocus)->idx) {
       hideclient(s, cl);
@@ -2111,6 +2118,22 @@ updateewmhdesktops(state_t* s, monitor_t* mon) {
 }
 
 /**
+ * @brief Returns whether a desktop of a monitor holds any client.
+ * Scratchpads keep the desktop they spawned on but belong to none,
+ * so they never count.
+ *
+ * @param mon The monitor the desktop is on
+ * @param idx The index of the desktop
+ */
+bool
+isdesktopoccupied(monitor_t* mon, uint32_t idx) {
+  for(client_t* cl = mon->clients; cl != NULL; cl = cl->next) {
+    if(cl->scratchpad_index == -1 && cl->desktop == idx) return true;
+  }
+  return false;
+}
+
+/**
  * @brief Unpublishes active desktops that hold no client anymore and
  * notifies EWMH if any were removed. The currently viewed desktop
  * stays published even when empty.
@@ -2126,14 +2149,7 @@ prunedesktops(state_t* s, monitor_t* mon) {
     if(!mon->activedesktops[i].init) continue;
     if(curdesk && i == curdesk->idx) continue;
 
-    bool occupied = false;
-    for(client_t* cl = mon->clients; cl != NULL; cl = cl->next) {
-      if(cl->desktop == i) {
-        occupied = true;
-        break;
-      }
-    }
-    if(!occupied) {
+    if(!isdesktopoccupied(mon, i)) {
       mon->activedesktops[i].init = false;
       changed = true;
     }
@@ -2157,20 +2173,11 @@ fallbackdesktop(state_t* s, monitor_t* mon) {
   desktop_t* curdesk = mondesktop(s, mon);
   if(!curdesk) return;
 
-  for(client_t* cl = mon->clients; cl != NULL; cl = cl->next) {
-    if(cl->desktop == curdesk->idx) return;
-  }
+  if(isdesktopoccupied(mon, curdesk->idx)) return;
 
   int32_t target = (int32_t)s->config.desktopinit;
   for(uint32_t i = 0; i < mon->desktopcount; i++) {
-    bool occupied = false;
-    for(client_t* cl = mon->clients; cl != NULL; cl = cl->next) {
-      if(cl->desktop == i) {
-        occupied = true;
-        break;
-      }
-    }
-    if(occupied) {
+    if(isdesktopoccupied(mon, i)) {
       target = i;
       break;
     }

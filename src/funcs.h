@@ -494,6 +494,7 @@ void             updateewmhdesktops(state_t* s, monitor_t* mon);
  * @param mon The monitor that the virtual desktop is on
  */
 void             createdesktop(state_t* s, uint32_t idx, monitor_t* mon);
+bool             isdesktopoccupied(monitor_t* mon, uint32_t idx);
 void             prunedesktops(state_t* s, monitor_t* mon);
 
 /**
