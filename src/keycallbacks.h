@@ -84,7 +84,7 @@ inline void cyclefocusup(state_t* s, passthrough_data_t data) {
  */
 inline void killfocus(state_t* s, passthrough_data_t data) { 
   (void)data;
-  if(!s->focus || s->focus->is_scratchpad) {
+  if(!s->focus) {
     return;
   }
   killclient(s, s->focus);
@@ -970,6 +970,8 @@ inline void togglescratchpad(state_t* s, passthrough_data_t data) {
     showclient(s, cl);
     raiseclient(s, cl);
   } else {
+    // A hidden focus would stay the target of focus keybinds (killfocus)
+    if(s->focus == cl) unfocusclient(s, cl);
     hideclient(s, cl);
   }
 
