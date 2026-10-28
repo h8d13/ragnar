@@ -538,8 +538,10 @@ cfgevalkeybinds(state_t* s, uint32_t* numkeybinds, const char* label) {
     return NULL;
   }
   uint32_t len = config_setting_length(setting);
-  *numkeybinds = len;
   keybind_t* keys = malloc(sizeof(keybind_t) * len);
+  // separate write index: an invalid entry is skipped, and must not
+  // leave an uninitialized slot evkeypress would call into
+  uint32_t n = 0;
 
   for(uint32_t i = 0; i < len; ++i)
   {
@@ -580,7 +582,7 @@ cfgevalkeybinds(state_t* s, uint32_t* numkeybinds, const char* label) {
     uint32_t i_val = 0;
     config_setting_lookup_int(keybind, "i", (int32_t*)&i_val);
 
-    keys[i] = (keybind_t){
+    keys[n++] = (keybind_t){
       .cb = cb,
       .key = key,
       .data = (passthrough_data_t){
@@ -591,6 +593,7 @@ cfgevalkeybinds(state_t* s, uint32_t* numkeybinds, const char* label) {
     };
   }
 
+  *numkeybinds = n;
   return keys;
 }
 
@@ -633,8 +636,8 @@ void
 readconfig(state_t* s, config_data_t* data) {
   if(!data) return;
 
-  // First: logmsg drops everything while logmessages is false, so any
-  // key read before this point fails silently. logfile is still NULL
+  // First: logmsg drops all but errors while logmessages is false, so
+  // warnings before this point are silent. logfile is still NULL
   // here, which logtofile checks, so only the console gets these
   cfgreadbool(s, &data->logmessages, "log_messages");
   cfgreadbool(s, &data->shouldlogtofile, "should_log_to_file");

@@ -967,7 +967,8 @@ int32_t          compstrs(const void* a, const void* b);
  * @param lvl The log level 
  * @param fmt The format string
  * @param ... The variadic arguments */
-void             logmsg(state_t* s, log_level_t lvl, const char* fmt, ...);
+void             logmsg(state_t* s, log_level_t lvl, const char* fmt, ...)
+                 __attribute__((format(printf, 3, 4)));
 
 /**
  * @brief Logs a given formatted message to the log file specified in the

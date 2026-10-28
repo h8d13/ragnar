@@ -639,9 +639,9 @@ makeclient(state_t* s, xcb_window_t win) {
   // Retrieving cursor position
   bool cursor_success;
   v2_t cursor = cursorpos(s, &cursor_success);
-  if(!cursor_success) return NULL;
   // If the cursor is on the mapped window when it spawned, focus it.
-  if(pointinarea(cursor, cl->area)) {
+  // A failed query skips only this: cl is already linked and mapped.
+  if(cursor_success && pointinarea(cursor, cl->area)) {
     focusclient(s, cl, true);
   }
 
@@ -666,7 +666,7 @@ bool
 pointinarea(v2_t p, area_t area) {
   return (p.x >= area.pos.x &&
       p.x < (area.pos.x + area.size.x) &&
-      p.x >= area.pos.y &&
+      p.y >= area.pos.y &&
       p.y < (area.pos.y + area.size.y));
 }
 
@@ -757,7 +757,8 @@ truecolorwindow(state_t* s, area_t a, uint32_t bw) {
       s->config.winborderwidth, vinfo.depth, InputOutput, vinfo.visual,
       mask, &attr);
 
-  logmsg(s,  LogLevelTrace, "created window with true-color colormap.",
+  logmsg(s,  LogLevelTrace,
+         "created window with true-color colormap at %.0f,%.0f %.0fx%.0f.",
          a.pos.x, a.pos.y, a.size.x, a.size.y);
 
   return win;
@@ -861,11 +862,14 @@ moveclient(state_t* s, client_t* cl, v2_t pos, bool manage_mons) {
 
   configclient(s, cl);
 
-  // Update focused monitor in case the window was moved onto another monitor
-  if(manage_mons){ 
+  // Update focused monitor in case the window was moved onto another monitor.
+  // Unlink from cl->mon, the list cl is on: monfocus can differ, and
+  // relinking a still-linked cl splices its old list into the new one.
+  if(manage_mons){
+    monitor_t* oldmon = cl->mon;
     cl->mon = clientmon(s, cl);
-    if(cl->mon != s->monfocus) {
-      monremoveclient(s->monfocus, cl);
+    if(cl->mon != oldmon) {
+      monremoveclient(oldmon, cl);
       monaddclient(cl->mon, cl);
       updateewmhdesktops(s, cl->mon);
     }
@@ -931,9 +935,11 @@ moveresizeclient(state_t* s, client_t* cl, area_t a) {
   // Update clients area
   cl->area = a;
   // Update focused monitor in case the window was moved onto another monitor
+  // (unlink from cl->mon, see moveclient)
+  monitor_t* oldmon = cl->mon;
   cl->mon = clientmon(s, cl);
-  if(cl->mon != s->monfocus) {
-    monremoveclient(s->monfocus, cl);
+  if(cl->mon != oldmon) {
+    monremoveclient(oldmon, cl);
     monaddclient(cl->mon, cl);
     updateewmhdesktops(s, cl->mon);
   }
@@ -2565,7 +2571,9 @@ iswindowdock(state_t* s, xcb_window_t win) {
 v2_t 
 applysizehints(state_t* s, client_t* cl, v2_t size) {
   // Retrieve size hints
-  xcb_size_hints_t hints;
+  // zeroed: without WM_NORMAL_HINTS the reply fails, and the fields are
+  // still read below for minsize/maxsize/fixed
+  xcb_size_hints_t hints = {0};
   if (xcb_icccm_get_wm_normal_hints_reply(s->con, xcb_icccm_get_wm_normal_hints(s->con, cl->win), &hints, NULL)) {
     // Enforce minimum size
     if (hints.flags & XCB_ICCCM_SIZE_HINT_P_MIN_SIZE) {
@@ -2786,8 +2794,11 @@ evmaprequest(state_t* s, xcb_generic_event_t* ev) {
   }
 
   // Handle new client
+  // NULL when the window vanished before its geometry could be read
   client_t* cl = makeclient(s, map_ev->window);
-  
+  if(!cl) {
+    return;
+  }
 
   if(!cl->floating) {
     addtolayout(s, cl);
@@ -2834,6 +2845,7 @@ evmapnotify(state_t* s, xcb_generic_event_t* ev) {
   if (!wa_reply) {
     return;
   }
+  free(wa_reply);
 
   if(iswindowpopup(s, notify_ev->window)) {
     vector_append(&s->popups, notify_ev->window);
@@ -2909,7 +2921,7 @@ evunmapnotify(state_t* s, xcb_generic_event_t* ev) {
     return;
   }
   if(iswindowpopup(s, unmap_ev->window)) {
-    logmsg(s, LogLevelTrace, "remoed popup window. ", unmap_ev->window); 
+    logmsg(s, LogLevelTrace, "removed popup window %u.", unmap_ev->window);
     int32_t idx = -1;
     for(uint32_t i = 0; i < s->popups.size; i++) {
       if(s->popups.items[i] == unmap_ev->window) {
@@ -3580,6 +3592,9 @@ addclient(state_t* s, client_t** clients, xcb_window_t win) {
   // decides real branches
   client_t* cl = (client_t*)calloc(1, sizeof(*cl));
   cl->win = win;
+  // 0 is a valid slot: windows adopted by managewins never pass through
+  // evmaprequest, and would be skipped by desktop switches as scratchpads
+  cl->scratchpad_index = -1;
   cl->edges = NULL;
 
 
@@ -4025,7 +4040,10 @@ readstrut(state_t* s, xcb_window_t win) {
   xcb_get_property_cookie_t propcookie = xcb_get_property(s->con, 0, win, reply->atom, XCB_GET_PROPERTY_TYPE_ANY, 0, 16);
   xcb_get_property_reply_t* propreply = xcb_get_property_reply(s->con, propcookie, NULL);
 
-  if (reply && xcb_get_property_value_length(propreply) >= 16) {
+  // propreply is NULL when the window vanished during the tree walk.
+  // value_length is in bytes, and data[9] is the last value read.
+  if (propreply && propreply->format == 32 &&
+      xcb_get_property_value_length(propreply) >= 10 * 4) {
     uint32_t* data = (uint32_t*)xcb_get_property_value(propreply);
     strut.left    = data[0];
     strut.right   = data[1];
@@ -4106,12 +4124,14 @@ getatom(state_t* s, const char* atomstr) {
  * */
 void
 ewmh_updateclients(state_t* s) {
+  // EWMH wants every managed window, not only the focused monitor's
   xcb_delete_property(s->con, s->root, s->ewmh_atoms[EWMHclientList]);
 
-  client_t* cl;
-  for (cl = s->monfocus->clients; cl != NULL; cl = cl->next) {
-    xcb_change_property(s->con, XCB_PROP_MODE_APPEND, s->root, s->ewmh_atoms[EWMHclientList],
-	XCB_ATOM_WINDOW, 32, 1, &cl->win);
+  for (monitor_t* mon = s->monitors; mon != NULL; mon = mon->next) {
+    for (client_t* cl = mon->clients; cl != NULL; cl = cl->next) {
+      xcb_change_property(s->con, XCB_PROP_MODE_APPEND, s->root,
+          s->ewmh_atoms[EWMHclientList], XCB_ATOM_WINDOW, 32, 1, &cl->win);
+    }
   }
 }
 
@@ -4163,18 +4183,21 @@ compstrs(const void* a, const void* b) {
  * @param fmt The format string
  * @param ... The variadic arguments */
 void logmsg(state_t* s, log_level_t lvl, const char* fmt, ...) {
-  if (!s->config.logmessages) return;
+  // errors bypass log_messages: config parse and display failures run
+  // before or regardless of it, and terminate with nothing printed
+  if (lvl != LogLevelError && !s->config.logmessages) return;
+  FILE* out = lvl == LogLevelError ? stderr : stdout;
 
   /* Print the log level */
   switch (lvl) {
     case LogLevelTrace:
-      fprintf(stdout, "ragnar: INFO: ");
+      fprintf(out, "ragnar: INFO: ");
       break;
     case LogLevelWarn:
-      fprintf(stdout, "ragnar: WARNING: ");
+      fprintf(out, "ragnar: WARNING: ");
       break;
     case LogLevelError:
-      fprintf(stderr, "ragnar: ERROR: ");
+      fprintf(out, "ragnar: ERROR: ");
       break;
     default:
       break;
@@ -4183,8 +4206,8 @@ void logmsg(state_t* s, log_level_t lvl, const char* fmt, ...) {
   // Print the message to log with variadic arguments
   va_list args;
   va_start(args, fmt);
-  vprintf(fmt, args);
-  printf("\n");
+  vfprintf(out, fmt, args);
+  fputc('\n', out);
   va_end(args);
 
   if (s->config.shouldlogtofile) {

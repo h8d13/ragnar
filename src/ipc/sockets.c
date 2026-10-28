@@ -69,8 +69,7 @@ extractclient(state_t* s, const uint8_t* data) {
 
   client_t* cl = clientfromwin(s, win);
   if(!cl) {
-    logmsg(s, LogLevelError, 
-           "ipc: window %i is invalid, not killing.");
+    logmsg(s, LogLevelError, "ipc: window %i is invalid.", win);
     return NULL;
   }
 
