@@ -2819,6 +2819,8 @@ evmaprequest(state_t* s, xcb_generic_event_t* ev) {
   if(s->mapping_scratchpad_index != -1) {
 
     cl->floating = true;
+    // Edges were set up in makeclient while still tiled (hidden)
+    updateedgewindows(s, cl);
 
     s->scratchpads[s->mapping_scratchpad_index] = (scratchpad_t) {
       .win = cl->win,
